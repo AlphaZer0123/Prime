@@ -17,11 +17,11 @@ void *addr;
 //Method Declarations
 bool kill(string message);
 bool error(string message);
-void threadFindPrimes(const int from, const int to);
+void threadFindPrimes(const unsigned int from, const unsigned int to);
 
 int main(int argc, char **argv) {
 
-	threadFindPrimes(20, 200);
+	threadFindPrimes(1, 1000000000);
 
 		/*
 		//Create Shared Memory Object
@@ -97,15 +97,15 @@ bool error(string message) {
 
 //This Code Borrowed From
 //http://create.stephan-brumme.com/eratosthenes
-void threadFindPrimes(const int from, const int to) {
+void threadFindPrimes(const unsigned int from, const unsigned int to) {
 	const int memorySize = (to - from + 1) / 2;
 
 	//Setup
 	char* isPrime = new char[memorySize];
-	for (int i = 0; i < memorySize; i++)
+	for (unsigned int i = 0; i < memorySize; i++)
 		isPrime[i] = 1;
 
-	 for (int i = 3; i*i <= to; i+=2) {
+	 for (unsigned int i = 3; i*i <= to; i+=2) {
 		 //skip multiples of three: 9, 15, 21, 27, ...
 		 //More than 13 doesn't give any improvement (test outweights its gain)
 		 if (i >= 3*3 && i % 3 == 0)
@@ -133,14 +133,14 @@ void threadFindPrimes(const int from, const int to) {
 			 minJ += i;
 
 		 // find all odd non-primes
-		 	 for (int j = minJ; j <= to; j += 2*i) {
-		 		 int index = j - from;
+		 	 for (unsigned int j = minJ; j <= to; j += 2*i) {
+		 		unsigned int index = j - from;
 		 		 isPrime[index/2] = 0;
 		 	 }
 	 	 }
 	 // count primes in this block
-	 int found = 0;
-	 for (int i = 0; i < memorySize; i++)
+	 unsigned int found = 0;
+	 for (unsigned int i = 0; i < memorySize; i++)
 		 found += isPrime[i];
 	 // 2 is not odd => include on demand
 	 if (from <= 2)
@@ -148,5 +148,4 @@ void threadFindPrimes(const int from, const int to) {
 
 	 delete[] isPrime;
 	 cout << found;
-	 }
 }
