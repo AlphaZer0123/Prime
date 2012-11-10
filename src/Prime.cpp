@@ -12,27 +12,33 @@ using namespace std;	//namespace for ease of use
 
 //declare global variables
 int shmem_fd;
+void *addr;
 
 //Method Declarations
 bool kill(string message);
 bool error(string message);
+void threadFindPrimes(const int from, const int to);
 
 int main(int argc, char **argv) {
-	void *addr;
 
+	threadFindPrimes(20, 200);
+
+		/*
+		//Create Shared Memory Object
 		shmem_fd = shm_open("/villwocj_shmem", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
 		if( shmem_fd == -1)
 			kill("Can't open shmem object");
 
+		//Expand Shared Memory Object
 		if( ftruncate(shmem_fd, 1024 * 1024 * sizeof(double) * 16) == -1)
 			kill("Failed to resize shmem object");
 
-		addr = mmap(NULL, 1024 * 1024 * sizeof(double) * 16, PROT_READ | PROT_WRITE, MAP_SHARED, shmem_fd, 0);
-
+		//Set initial Pointer & Memory Map it.
+		//addr = mmap(NULL, 1024 * 1024 * sizeof(double) * 16, PROT_READ | PROT_WRITE, MAP_SHARED, shmem_fd, 0);
 		if(MAP_FAILED == addr)
-			kill("Map failed");
+			kill("Memory Maping failed");
 
-		/* at this point, everything is based on pointer arithmetic -- relative to addr */
+		//at this point, everything is based on pointer arithmetic -- relative to addr
 		int* size = (int*)addr;
 		*size = 10;
 
@@ -87,4 +93,60 @@ bool kill(string message) {
 bool error(string message) {
 	perror(message.c_str());
 	return false;
+}
+
+//This Code Borrowed From
+//http://create.stephan-brumme.com/eratosthenes
+void threadFindPrimes(const int from, const int to) {
+	const int memorySize = (to - from + 1) / 2;
+
+	//Setup
+	char* isPrime = new char[memorySize];
+	for (int i = 0; i < memorySize; i++)
+		isPrime[i] = 1;
+
+	 for (int i = 3; i*i <= to; i+=2) {
+		 //skip multiples of three: 9, 15, 21, 27, ...
+		 //More than 13 doesn't give any improvement (test outweights its gain)
+		 if (i >= 3*3 && i % 3 == 0)
+			 continue;
+		 // skip multiples of five
+		 if (i >= 5*5 && i % 5 == 0)
+			 continue;
+		 // skip multiples of seven
+		 if (i >= 7*7 && i % 7 == 0)
+			 continue;
+		 // skip multiples of eleven
+		 if (i >= 11*11 && i % 11 == 0)
+			 continue;
+		 // skip multiples of thirteen
+		 if (i >= 13*13 && i % 13 == 0)
+			 continue;
+
+		 // skip numbers before current slice
+		 int minJ = ((from+i-1)/i)*i;
+		 if (minJ < i*i)
+			 minJ = i*i;
+
+		 // start value must be odd
+		 if ((minJ & 1) == 0)
+			 minJ += i;
+
+		 // find all odd non-primes
+		 	 for (int j = minJ; j <= to; j += 2*i) {
+		 		 int index = j - from;
+		 		 isPrime[index/2] = 0;
+		 	 }
+	 	 }
+	 // count primes in this block
+	 int found = 0;
+	 for (int i = 0; i < memorySize; i++)
+		 found += isPrime[i];
+	 // 2 is not odd => include on demand
+	 if (from <= 2)
+		 found++;
+
+	 delete[] isPrime;
+	 cout << found;
+	 }
 }
