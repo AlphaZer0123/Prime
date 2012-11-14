@@ -49,6 +49,7 @@ int main(int argc, char **argv) {
 		threadFindPrimes(1, 1000000000); //1 billion for testing
 
 
+		//threadFindPrimes(1, 4294967295); //Unsigned 32 bit integer size.
 
 		/*
 		value[0] = 17.32;
