@@ -14,23 +14,62 @@ using namespace std;	//namespace for ease of use
 int shmem_fd;
 void *addr;
 unsigned char *bitmap;
+double *value;
 
 //Method Declarations
 bool kill(string message);
 bool error(string message);
+void initializeMemory();
 void threadFindPrimes(const unsigned int from, const unsigned int to);
 void addPrimeToBitMap(unsigned int prime);
-
 bool isBitOn(unsigned int whichNum);
 void turnBitOff(unsigned int bit);
 void turnBitOn(unsigned int);
-
 unsigned int countPrimes();
 bool isNumInPrimeList(unsigned int num);
 void printPrimes();
 
 int main(int argc, char **argv) {
 
+	//Set up The Shared Memory
+	initializeMemory();
+
+	threadFindPrimes(1, 1000000);
+
+	//threadFindPrimes(1, 4294967295); //Unsigned 32 bit integer size.
+
+	//for (int i = 1; i < 999999; i++) {
+	//	if (isBitOn(i))
+	//		cout << i << endl;
+	//}
+
+	/*
+	bitmap[0] represents 0-7
+	bitmap[1] represents 8-15
+	if(bitmap[0] & 1 << 3)	//bit 3 is set
+		1;
+	else					//bit 3 is off
+		2;
+	bitmap[0] |= 1 << 3; //turns on bit 3
+	*/
+
+	return 0;
+}
+
+//Ends program with error.
+bool kill(string message) {
+	perror(message.c_str());
+	exit(-1);
+	return false;
+}
+//outputs a string to stderror
+bool error(string message) {
+	perror(message.c_str());
+	return false;
+}
+
+//Sets up the Shared Memory and associated pointers
+void initializeMemory() {
 	//Create Shared Memory Object
 	shmem_fd = shm_open("/villwocj_shmem", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
 	if( shmem_fd == -1)
@@ -49,68 +88,9 @@ int main(int argc, char **argv) {
 	int* size = (int*)addr;
 	*size = 10;
 
-	double *value = (double*)(addr + sizeof(int));
+	value = (double*)(addr + sizeof(int));
 
 	bitmap = (unsigned char*)(addr + sizeof(int) + sizeof(double) * *size);
-
-	threadFindPrimes(1, 1000000);
-
-	//threadFindPrimes(1, 4294967295); //Unsigned 32 bit integer size.
-
-	for (int i = 1; i < 999999; i++) {
-		if (isBitOn(i))
-			cout << i << endl;
-	}
-
-	/*
-	value[0] = 17.32;
-	value[1] = M_PI;
-	value[2] = M_E;
-	value[3] = HUGE_VAL;
-	value[4] = FLT_EPSILON;
-	value[5] = FLT_MAX;
-	value[6] = INFINITY;
-	value[7] = NAN;
-	*/
-
-	// bitmap[0] represents 0-7
-	// bitmap[1] represents 8-15
-
-	/*
-	if(bitmap[0] & 1 << 3)	//bit 3 is set
-		1;
-	else					//bit 3 is off
-		2;
-
-	bitmap[0] |= 1 << 3; //turns on bit 3
-	*/
-
-	/*
-	  ~ bitwise not
-	  ^ bitwise xor
-	  << left shift
-	  >> right shift
-
-	  assignment operators
-	  &=
-	  |=
-	  ~=
-	  ^=
-	 */
-
-	return 0;
-}
-
-//Ends program with error.
-bool kill(string message) {
-	perror(message.c_str());
-	exit(-1);
-	return false;
-}
-//outputs a string to stderror
-bool error(string message) {
-	perror(message.c_str());
-	return false;
 }
 
 //This Code Originally From:
