@@ -1,7 +1,7 @@
 CXX = icpc
 CXXFLAGS = -Wall -openmp -O3 -g
 #overkill on the flags, but that doesn't hurt anything.
-LDFLAGS = -lrt -lpthread
+LDFLAGS = -lrt -lpthread -std=c++0x
 #replace this if you want to change the output name.
 TARGET = Prime
 

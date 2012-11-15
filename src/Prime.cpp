@@ -20,6 +20,7 @@ double *value;
 bool kill(string message);
 bool error(string message);
 void initializeMemory();
+void childProc(string childNum);
 void threadFindPrimes(const unsigned int from, const unsigned int to);
 void addPrimeToBitMap(unsigned int prime);
 bool isBitOn(unsigned int whichNum);
@@ -33,6 +34,12 @@ int main(int argc, char **argv) {
 
 	//Set up The Shared Memory
 	initializeMemory();
+
+	thread t1(childProc, "1");
+
+	threadFindPrimes(1, 1000000);
+
+	t1.join();
 
 	threadFindPrimes(1, 1000000);
 
@@ -62,6 +69,7 @@ bool kill(string message) {
 	exit(-1);
 	return false;
 }
+
 //outputs a string to stderror
 bool error(string message) {
 	perror(message.c_str());
@@ -93,6 +101,10 @@ void initializeMemory() {
 	bitmap = (unsigned char*)(addr + sizeof(int) + sizeof(double) * *size);
 }
 
+void childProc(string childNum) {
+	cout << "thread " << childNum << " ran!" << endl;
+}
+
 //This Code Originally From:
 //http://create.stephan-brumme.com/eratosthenes
 //Ever so slightly optomized and changed
@@ -121,6 +133,9 @@ void threadFindPrimes(const unsigned int from, const unsigned int to) {
 			continue;
 		// skip multiples of thirteen
 		if (i >= 13*13 && i % 13 == 0)
+			continue;
+		// skip multiples of seventeen
+		if (i >= 17*17 && i % 17 == 0)
 			continue;
 
 		// skip numbers before current slice

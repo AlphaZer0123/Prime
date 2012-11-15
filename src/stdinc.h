@@ -5,8 +5,9 @@
 
 #include <sys/mman.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 #include <sys/types.h>
+
+#include <fcntl.h>
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
@@ -16,5 +17,7 @@
 #include <limits.h>
 #include <float.h>
 #include <string>
+
+#include <thread>
 
 #endif /* STDINC_H_ */
