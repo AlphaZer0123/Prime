@@ -27,7 +27,6 @@ bool isBitOn(unsigned int whichNum);
 void turnBitOff(unsigned int bit);
 void turnBitOn(unsigned int);
 unsigned int countPrimes();
-bool isNumInPrimeList(unsigned int num);
 void printPrimes();
 
 int main(int argc, char **argv) {
@@ -45,10 +44,11 @@ int main(int argc, char **argv) {
 
 	//threadFindPrimes(1, 4294967295); //Unsigned 32 bit integer size.
 
-	//for (int i = 1; i < 999999; i++) {
-	//	if (isBitOn(i))
-	//		cout << i << endl;
-	//}
+	//cout all primes
+	for (int i = 1; i < 999999; i++) {
+		if (isBitOn(i))
+			cout << i << endl;
+	}
 
 	/*
 	bitmap[0] represents 0-7
