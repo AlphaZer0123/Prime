@@ -16,11 +16,15 @@ int shmem_fd;
 //Command line options
 bool proc;
 int workers;
-unsigned int max;
+unsigned int maxWorkers;
 
+//Pointers for the Bitmap
 void *addr;
 unsigned char *bitmap;
 double *value;
+
+//Mutex(s)
+sem_t *sem;
 
 //Method Declarations
 bool kill(string message);
@@ -37,6 +41,7 @@ unsigned int countPrimes();
 void printPrimes();
 
 int main(int argc, char **argv) {
+	sem = sem_open("villwocj_sem", 0);
 
 	//just ran program.  assume 10 working children
 	if (argc < 2) {
@@ -50,7 +55,7 @@ int main(int argc, char **argv) {
 		workers = atoi (argv[1]);
 		proc = false;
 	}
-	//Provided both number and type, but not max
+	//Provided both number and type, but not max Workers
 	else if (argc == 3) {
 		workers = atoi (argv[1]);
 		if (argv[2] == "Processes" || argv[2] == "Process" || argv[2] == "processes" || argv[2] == "process")
@@ -65,7 +70,7 @@ int main(int argc, char **argv) {
 				proc = true;
 			else
 				proc = false;
-		max = atoi (argv[3]);
+		maxWorkers = atoi (argv[3]);
 	}
 	//Too many arguments
 	else {
@@ -82,29 +87,11 @@ int main(int argc, char **argv) {
 
 	//thread t1(childProc, 1);
 
-	threadFindPrimes(1, 1000000);
+	cout << "main finished" << endl;
 
 	//t1.join();
 
-	threadFindPrimes(1, 1000000);
-
 	//threadFindPrimes(1, 4294967295); //Unsigned 32 bit integer size.
-
-	//cout all primes
-	//for (int i = 1; i < 999999; i++) {
-	//	if (isBitOn(i))
-	//		cout << i << endl;
-	//}
-
-	/*
-	bitmap[0] represents 0-7
-	bitmap[1] represents 8-15
-	if(bitmap[0] & 1 << 3)	//bit 3 is set
-		1;
-	else					//bit 3 is off
-		2;
-	bitmap[0] |= 1 << 3; //turns on bit 3
-	*/
 
 	closeMemory();
 
@@ -157,7 +144,11 @@ void closeMemory() {
 }
 
 void childProc(int childNum) {
+	threadFindPrimes(1, 1000000);
 	cout << "thread " << childNum << " ran!" << endl;
+
+	if (sem_post(sem) == -1)
+		kill("sem_post failed");
 }
 
 //This Code Originally From:
@@ -281,4 +272,11 @@ bool isBitOn(unsigned int whichNum) {
 			return true;
 	}
 return false;
+}
+
+void printPrimes() {
+	for (int i = 1; i < 999999; i++) {
+		if (isBitOn(i))
+			cout << i << endl;
+	}
 }
