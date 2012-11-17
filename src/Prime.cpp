@@ -12,8 +12,11 @@ using namespace std;	//namespace for ease of use
 
 //declare global variables
 int shmem_fd;
+
+//Command line options
 bool proc;
 int workers;
+unsigned int max;
 
 void *addr;
 unsigned char *bitmap;
@@ -47,6 +50,7 @@ int main(int argc, char **argv) {
 		workers = atoi (argv[1]);
 		proc = false;
 	}
+	//Provided both number and type, but not max
 	else if (argc == 3) {
 		workers = atoi (argv[1]);
 		if (argv[2] == "Processes" || argv[2] == "Process" || argv[2] == "processes" || argv[2] == "process")
@@ -54,6 +58,16 @@ int main(int argc, char **argv) {
 		else
 			proc = false;
 	}
+	//Provided full arguments
+	else if (argc == 4) {
+		workers = atoi (argv[1]);
+			if (argv[2] == "Processes" || argv[2] == "Process" || argv[2] == "processes" || argv[2] == "process")
+				proc = true;
+			else
+				proc = false;
+		max = atoi (argv[3]);
+	}
+	//Too many arguments
 	else {
 		cout << HELP << endl << "I can't handle all this awesomness!\n" << "Too many arguments!" << endl;
 		kill("Invalid use of Prime.");

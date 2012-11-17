@@ -3,6 +3,8 @@
 
 #define _BSD_SOURCE
 
+#define HELP "\nCorrect Program Usage:\nPrime [<number of workers >] [<type of workers>]\nNumber of workers will be assumed to be 10 if not specified\nType will be assumed to be Threads if not specified\n\nExamples of correct usage:\nPrime 10 threads\nPrime 5 processes\n"
+
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
