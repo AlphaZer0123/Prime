@@ -18,6 +18,9 @@
 #include <float.h>
 #include <string>
 
-#include <thread>
+#include <boost/thread.hpp>
+#include <boost/foreach.hpp>
+
+using boost::thread;
 
 #endif /* STDINC_H_ */

@@ -12,6 +12,9 @@ using namespace std;	//namespace for ease of use
 
 //declare global variables
 int shmem_fd;
+bool proc;
+int workers;
+
 void *addr;
 unsigned char *bitmap;
 double *value;
@@ -20,7 +23,8 @@ double *value;
 bool kill(string message);
 bool error(string message);
 void initializeMemory();
-void childProc(string childNum);
+void closeMemory();
+void childProc(int childNum);
 void threadFindPrimes(const unsigned int from, const unsigned int to);
 void addPrimeToBitMap(unsigned int prime);
 bool isBitOn(unsigned int whichNum);
@@ -31,24 +35,52 @@ void printPrimes();
 
 int main(int argc, char **argv) {
 
+	//just ran program.  assume 10 working children
+	if (argc < 2) {
+		cout << "Quantity or Type Not Specified, So Assuming 8 Working Threads" << endl;
+		workers = 8;
+		proc = false;
+	}
+	//Provided just number, but not type.  Assume threads
+	else if (argc == 2) {
+		cout << "You provided number, but not type, So assuming " << atoi (argv[1]) << " Working Threads" << endl;
+		workers = atoi (argv[1]);
+		proc = false;
+	}
+	else if (argc == 3) {
+		workers = atoi (argv[1]);
+		if (argv[2] == "Processes" || argv[2] == "Process" || argv[2] == "processes" || argv[2] == "process")
+			proc = true;
+		else
+			proc = false;
+	}
+	else {
+		cout << HELP << endl << "I can't handle all this awesomness!\n" << "Too many arguments!" << endl;
+		kill("Invalid use of Prime.");
+	}
+
 	//Set up The Shared Memory
 	initializeMemory();
 
-	thread t1(childProc, "1");
+	for (int i = 0; i < workers; i++) {
+		thread t1(childProc, i);
+	}
+
+	//thread t1(childProc, 1);
 
 	threadFindPrimes(1, 1000000);
 
-	t1.join();
+	//t1.join();
 
 	threadFindPrimes(1, 1000000);
 
 	//threadFindPrimes(1, 4294967295); //Unsigned 32 bit integer size.
 
 	//cout all primes
-	for (int i = 1; i < 999999; i++) {
-		if (isBitOn(i))
-			cout << i << endl;
-	}
+	//for (int i = 1; i < 999999; i++) {
+	//	if (isBitOn(i))
+	//		cout << i << endl;
+	//}
 
 	/*
 	bitmap[0] represents 0-7
@@ -59,6 +91,8 @@ int main(int argc, char **argv) {
 		2;
 	bitmap[0] |= 1 << 3; //turns on bit 3
 	*/
+
+	closeMemory();
 
 	return 0;
 }
@@ -78,6 +112,7 @@ bool error(string message) {
 
 //Sets up the Shared Memory and associated pointers
 void initializeMemory() {
+
 	//Create Shared Memory Object
 	shmem_fd = shm_open("/villwocj_shmem", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
 	if( shmem_fd == -1)
@@ -101,7 +136,13 @@ void initializeMemory() {
 	bitmap = (unsigned char*)(addr + sizeof(int) + sizeof(double) * *size);
 }
 
-void childProc(string childNum) {
+void closeMemory() {
+	//Make sure we remove our shm object.
+	close(shmem_fd);
+	shm_unlink("/villwocj_shmem");
+}
+
+void childProc(int childNum) {
 	cout << "thread " << childNum << " ran!" << endl;
 }
 
