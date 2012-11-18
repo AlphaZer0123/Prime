@@ -40,7 +40,7 @@ bool isBitOn(unsigned int whichNum);
 void turnBitOff(unsigned int bit);
 void turnBitOn(unsigned int);
 unsigned int countPrimes();
-void printPrimes();
+void printAllPrimes();
 
 int main(int argc, char **argv) {
 	//just ran program.  assume 10 working children
@@ -54,6 +54,7 @@ int main(int argc, char **argv) {
 		cout << "You provided number, but not type, So assuming " << atoi (argv[1]) << " Working Threads" << endl;
 		workers = atoi (argv[1]);
 		proc = false;
+		maxNumber = 1000000;
 	}
 	//Provided both number and type, but not max Workers
 	else if (argc == 3) {
@@ -154,8 +155,10 @@ void closeStuff() {
 }
 
 void childProc(int childNum) {
+	unsigned int numEach = maxNumber / workers;
+	unsigned int startNum = (childNum-1) * numEach;
 
-	threadFindPrimes(1, 1000000);
+	threadFindPrimes(startNum, numEach);
 
 	//lock
 	if (sem_wait(sem) == -1)
@@ -231,7 +234,7 @@ void threadFindPrimes(const unsigned int from, const unsigned int to) {
 	}
 
 	delete[] isPrime;
-	//cout << "found: " << found << " primes." << endl;
+	cout << "found: " << found << " primes." << endl;
 }
 
 //Adds the number passed to it to the bitmap.
@@ -290,7 +293,7 @@ bool isBitOn(unsigned int whichNum) {
 return false;
 }
 
-void printPrimes() {
+void printAllPrimes() {
 	for (int i = 1; i < 999999; i++) {
 		if (isBitOn(i))
 			cout << i << endl;
