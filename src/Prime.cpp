@@ -12,25 +12,27 @@ using namespace std;	//namespace for ease of use
 
 //declare global variables
 int shmem_fd;
+sem_t *sem;
+int workersFinished;
+int valueJunk;
+
+thread_group threadList;
 
 //Command line options
 bool proc;
 int workers;
-unsigned int maxWorkers;
+unsigned int maxNumber;
 
 //Pointers for the Bitmap
 void *addr;
 unsigned char *bitmap;
 double *value;
 
-//Mutex(s)
-sem_t *sem;
-
 //Method Declarations
 bool kill(string message);
 bool error(string message);
-void initializeMemory();
-void closeMemory();
+void initializeStuff();
+void closeStuff();
 void childProc(int childNum);
 void threadFindPrimes(const unsigned int from, const unsigned int to);
 void addPrimeToBitMap(unsigned int prime);
@@ -41,8 +43,6 @@ unsigned int countPrimes();
 void printPrimes();
 
 int main(int argc, char **argv) {
-	sem = sem_open("villwocj_sem", 0);
-
 	//just ran program.  assume 10 working children
 	if (argc < 2) {
 		cout << "Quantity or Type Not Specified, So Assuming 8 Working Threads" << endl;
@@ -70,7 +70,7 @@ int main(int argc, char **argv) {
 				proc = true;
 			else
 				proc = false;
-		maxWorkers = atoi (argv[3]);
+		maxNumber = atoi (argv[3]);
 	}
 	//Too many arguments
 	else {
@@ -78,23 +78,25 @@ int main(int argc, char **argv) {
 		kill("Invalid use of Prime.");
 	}
 
-	//Set up The Shared Memory
-	initializeMemory();
+	if (proc == true)
+		kill("processes not implemented yet!");
 
+	//Set up The Shared Memory & semaphore
+	initializeStuff();
+
+	//Fire up the Threads!
 	for (int i = 0; i < workers; i++) {
-		thread t1(childProc, i);
+		threadList.create_thread(boost::bind(childProc, i));
 	}
 
-	//thread t1(childProc, 1);
+	//Wait for all Threads to finish.
+	threadList.join_all();
 
 	cout << "main finished" << endl;
 
-	//t1.join();
-
 	//threadFindPrimes(1, 4294967295); //Unsigned 32 bit integer size.
 
-	closeMemory();
-
+	closeStuff();
 	return 0;
 }
 
@@ -112,7 +114,12 @@ bool error(string message) {
 }
 
 //Sets up the Shared Memory and associated pointers
-void initializeMemory() {
+void initializeStuff() {
+	//Create & Open Semaphore
+	sem = sem_open("/villwocj_sem", O_CREAT, 0777, 1);
+	if (sem == SEM_FAILED)
+		kill("Opening semaphore failed.");
+	workersFinished = 0;
 
 	//Create Shared Memory Object
 	shmem_fd = shm_open("/villwocj_shmem", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
@@ -133,22 +140,31 @@ void initializeMemory() {
 	*size = 10;
 
 	value = (double*)(addr + sizeof(int));
-
 	bitmap = (unsigned char*)(addr + sizeof(int) + sizeof(double) * *size);
 }
 
-void closeMemory() {
+void closeStuff() {
 	//Make sure we remove our shm object.
 	close(shmem_fd);
 	shm_unlink("/villwocj_shmem");
+
+	//Also remove the semaphore(s)
+	sem_close(sem);
+	sem_unlink("/villwocj_sem");
 }
 
 void childProc(int childNum) {
-	threadFindPrimes(1, 1000000);
-	cout << "thread " << childNum << " ran!" << endl;
 
+	threadFindPrimes(1, 1000000);
+
+	//lock
+	if (sem_wait(sem) == -1)
+		kill("sem_wait failed");
+	workersFinished++;
+	cout << "thread " << childNum << " ran!" << endl;
+	//unlock
 	if (sem_post(sem) == -1)
-		kill("sem_post failed");
+			kill("sem_post failed");
 }
 
 //This Code Originally From:
@@ -215,7 +231,7 @@ void threadFindPrimes(const unsigned int from, const unsigned int to) {
 	}
 
 	delete[] isPrime;
-	cout << "found: " << found << " primes." << endl;
+	//cout << "found: " << found << " primes." << endl;
 }
 
 //Adds the number passed to it to the bitmap.

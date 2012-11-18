@@ -25,5 +25,6 @@
 #include <boost/foreach.hpp>
 
 using boost::thread;
+using boost::thread_group;
 
 #endif /* STDINC_H_ */
