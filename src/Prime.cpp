@@ -12,9 +12,6 @@ using namespace std;	//namespace for ease of use
 
 //declare global variables
 int shmem_fd;
-sem_t *sem;
-int workersFinished;
-int valueJunk;
 
 thread_group threadList;
 
@@ -26,7 +23,7 @@ unsigned int maxNumber;
 //Pointers for the Bitmap
 void *addr;
 unsigned char *bitmap;
-double *value;
+unsigned int *size;
 
 //Method Declarations
 bool kill(string message);
@@ -34,7 +31,7 @@ bool error(string message);
 void initializeStuff();
 void closeStuff();
 void childProc(int childNum);
-void threadFindPrimes(const unsigned int from, const unsigned int to);
+void threadFindPrimes(unsigned int from, const unsigned int to);
 void addPrimeToBitMap(unsigned int prime);
 bool isBitOn(unsigned int whichNum);
 void turnBitOff(unsigned int bit);
@@ -43,6 +40,9 @@ unsigned int countPrimes();
 void printAllPrimes();
 
 int main(int argc, char **argv) {
+	maxNumber = 100;
+	//4294967295  full 32 bit
+
 	//just ran program.  assume 10 working children
 	if (argc < 2) {
 		cout << "Quantity or Type Not Specified, So Assuming 8 Working Threads" << endl;
@@ -54,7 +54,6 @@ int main(int argc, char **argv) {
 		cout << "You provided number, but not type, So assuming " << atoi (argv[1]) << " Working Threads" << endl;
 		workers = atoi (argv[1]);
 		proc = false;
-		maxNumber = 1000000;
 	}
 	//Provided both number and type, but not max Workers
 	else if (argc == 3) {
@@ -93,9 +92,10 @@ int main(int argc, char **argv) {
 	//Wait for all Threads to finish.
 	threadList.join_all();
 
-	cout << "main finished" << endl;
+	//threadFindPrimes(51, 100);
 
-	//threadFindPrimes(1, 4294967295); //Unsigned 32 bit integer size.
+	cout << "Found " << countPrimes() << endl;
+	printAllPrimes();
 
 	closeStuff();
 	return 0;
@@ -116,71 +116,56 @@ bool error(string message) {
 
 //Sets up the Shared Memory and associated pointers
 void initializeStuff() {
-	//Create & Open Semaphore
-	sem = sem_open("/villwocj_sem", O_CREAT, 0777, 1);
-	if (sem == SEM_FAILED)
-		kill("Opening semaphore failed.");
-	workersFinished = 0;
-
 	//Create Shared Memory Object
 	shmem_fd = shm_open("/villwocj_shmem", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
 	if( shmem_fd == -1)
 		kill("Can't open shmem object");
 
 	//Expand Shared Memory Object
-	if( ftruncate(shmem_fd, 1024 * 1024 * sizeof(double) * 16) == -1)
+	if( ftruncate(shmem_fd, sizeof(int) + sizeof(unsigned char) * 536870912) == -1)
 		kill("Failed to resize shmem object");
 
 	//Set initial Pointer & Memory Map it.
-	addr = mmap(NULL, 1024 * 1024 * sizeof(double) * 16, PROT_READ | PROT_WRITE, MAP_SHARED, shmem_fd, 0);
+	addr = mmap(NULL, sizeof(int) + sizeof(unsigned char) * 536870912, PROT_READ | PROT_WRITE, MAP_SHARED, shmem_fd, 0);
 	if(MAP_FAILED == addr)
-		kill("Memory Maping failed");
+		kill("Memory Mapping failed");
 
 	//at this point, everything is based on pointer arithmetic -- relative to addr
-	int* size = (int*)addr;
+	size = (unsigned int*)addr;
 	*size = 10;
 
-	value = (double*)(addr + sizeof(int));
-	bitmap = (unsigned char*)(addr + sizeof(int) + sizeof(double) * *size);
+	bitmap = (unsigned char*)(addr + sizeof(unsigned int));
 }
 
 void closeStuff() {
 	//Make sure we remove our shm object.
 	close(shmem_fd);
 	shm_unlink("/villwocj_shmem");
-
-	//Also remove the semaphore(s)
-	sem_close(sem);
-	sem_unlink("/villwocj_sem");
 }
 
 void childProc(int childNum) {
-	unsigned int numEach = maxNumber / workers;
-	unsigned int startNum = (childNum-1) * numEach;
+	unsigned int numEach = (maxNumber / workers) + 1;
+	unsigned int startNum = childNum * numEach;
+	unsigned int endNum = startNum + numEach;
+	if (endNum > maxNumber)
+		endNum = maxNumber;
 
-	threadFindPrimes(startNum, numEach);
-
-	//lock
-	if (sem_wait(sem) == -1)
-		kill("sem_wait failed");
-	workersFinished++;
-	cout << "thread " << childNum << " ran!" << endl;
-	//unlock
-	if (sem_post(sem) == -1)
-			kill("sem_post failed");
+	//Debug code for if values seem to be wrong:
+	cout << "Thread " << childNum << " will find from " << startNum << " to " << endNum << endl;
+	threadFindPrimes(startNum, endNum);
 }
 
 //This Code Originally From:
 //http://create.stephan-brumme.com/eratosthenes
 //Ever so slightly optomized and changed
-void threadFindPrimes(const unsigned int from, const unsigned int to) {
+void threadFindPrimes(unsigned int from, const unsigned int to) {
 	const unsigned int memorySize = (to - from + 1) / 2;
 
 	//Setup
 	char* isPrime = new char[memorySize];
 	for (unsigned int i = 0; i < memorySize; i++)
 		isPrime[i] = 1;
-	isPrime[0] = 0;
+	//isPrime[0] = 0;
 
 	for (unsigned int i = 3; i*i <= to; i+=2) {
 		//skip multiples of three: 9, 15, 21, 27, ...
@@ -223,7 +208,7 @@ void threadFindPrimes(const unsigned int from, const unsigned int to) {
 	int found = 0;
 	for (unsigned int i = 0; i < memorySize; i++) {
 		if (isPrime[i] == 1) {
-			addPrimeToBitMap( (i * 2) + 1);
+			addPrimeToBitMap( (i * 2) + 1 + from);
 			found++;
 		}
 	}
@@ -239,14 +224,16 @@ void threadFindPrimes(const unsigned int from, const unsigned int to) {
 
 //Adds the number passed to it to the bitmap.
 void addPrimeToBitMap(unsigned int prime) {
-	int primeByteLoc = 0;
-	int primeBitLoc = 0;
-	primeByteLoc = (prime - 1) / 8;
-	primeBitLoc = prime - (primeByteLoc * 8);
+	int primeByteLoc = (prime - 1) / 8;
+	int primeBitLoc = prime - (primeByteLoc * 8);
 	bitmap[primeByteLoc] |= 128 >> primeBitLoc;
+	cout << "adding prime: " << prime << " to byte: " << primeByteLoc << "(" << &primeByteLoc << ") and bit: " << primeBitLoc << endl;
 }
 
 bool isBitOn(unsigned int whichNum) {
+	if (whichNum < 1)
+		return false;
+
 	unsigned int whichByte = 0;
 	unsigned int whichBit = 0;
 	whichByte = (whichNum - 1) / 8;
@@ -293,8 +280,17 @@ bool isBitOn(unsigned int whichNum) {
 return false;
 }
 
+unsigned int countPrimes() {
+	int found = 0;
+	for (unsigned int i = 0; i <= maxNumber; i++) {
+		if (isBitOn(i))
+			found ++;
+	}
+	return found;
+}
+
 void printAllPrimes() {
-	for (int i = 1; i < 999999; i++) {
+	for (unsigned int i = 1; i < maxNumber; i++) {
 		if (isBitOn(i))
 			cout << i << endl;
 	}
