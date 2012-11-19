@@ -13,12 +13,12 @@ using namespace std;	//namespace for ease of use
 //declare global variables
 int shmem_fd;
 
+//BOOST thread group for ease of use.
 thread_group threadList;
 
 //Command line options
 bool proc;
 int workers;
-unsigned int maxNumber;
 
 //Pointers for the Bitmap
 void *addr;
@@ -31,7 +31,7 @@ bool error(string message);
 void initializeStuff();
 void closeStuff();
 void childProc(int childNum);
-void threadFindPrimes(unsigned int from, const unsigned int to);
+void threadFindPrimes(const unsigned int from, const unsigned int to);
 void addPrimeToBitMap(unsigned int prime);
 bool isBitOn(unsigned int whichNum);
 void turnBitOff(unsigned int bit);
@@ -40,9 +40,6 @@ unsigned int countPrimes();
 void printAllPrimes();
 
 int main(int argc, char **argv) {
-	maxNumber = 100;
-	//4294967295  full 32 bit
-
 	//just ran program.  assume 10 working children
 	if (argc < 2) {
 		cout << "Quantity or Type Not Specified, So Assuming 8 Working Threads" << endl;
@@ -55,22 +52,13 @@ int main(int argc, char **argv) {
 		workers = atoi (argv[1]);
 		proc = false;
 	}
-	//Provided both number and type, but not max Workers
+	//Provided both number and type.
 	else if (argc == 3) {
 		workers = atoi (argv[1]);
 		if (argv[2] == "Processes" || argv[2] == "Process" || argv[2] == "processes" || argv[2] == "process")
 			proc = true;
 		else
 			proc = false;
-	}
-	//Provided full arguments
-	else if (argc == 4) {
-		workers = atoi (argv[1]);
-			if (argv[2] == "Processes" || argv[2] == "Process" || argv[2] == "processes" || argv[2] == "process")
-				proc = true;
-			else
-				proc = false;
-		maxNumber = atoi (argv[3]);
 	}
 	//Too many arguments
 	else {
@@ -144,11 +132,11 @@ void closeStuff() {
 }
 
 void childProc(int childNum) {
-	unsigned int numEach = (maxNumber / workers) + 1;
+	unsigned int numEach = (MAXNUMBER / workers) + 1;
 	unsigned int startNum = childNum * numEach;
 	unsigned int endNum = startNum + numEach;
-	if (endNum > maxNumber)
-		endNum = maxNumber;
+	if (endNum > MAXNUMBER)
+		endNum = MAXNUMBER;
 
 	//Debug code for if values seem to be wrong:
 	cout << "Thread " << childNum << " will find from " << startNum << " to " << endNum << endl;
@@ -158,7 +146,7 @@ void childProc(int childNum) {
 //This Code Originally From:
 //http://create.stephan-brumme.com/eratosthenes
 //Ever so slightly optomized and changed
-void threadFindPrimes(unsigned int from, const unsigned int to) {
+void threadFindPrimes(const unsigned int from, const unsigned int to) {
 	const unsigned int memorySize = (to - from + 1) / 2;
 
 	//Setup
@@ -282,7 +270,7 @@ return false;
 
 unsigned int countPrimes() {
 	int found = 0;
-	for (unsigned int i = 0; i <= maxNumber; i++) {
+	for (unsigned int i = 0; i <= MAXNUMBER; i++) {
 		if (isBitOn(i))
 			found ++;
 	}
@@ -290,7 +278,7 @@ unsigned int countPrimes() {
 }
 
 void printAllPrimes() {
-	for (unsigned int i = 1; i < maxNumber; i++) {
+	for (unsigned int i = 1; i < MAXNUMBER; i++) {
 		if (isBitOn(i))
 			cout << i << endl;
 	}
