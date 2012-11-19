@@ -31,8 +31,8 @@ bool error(string message);
 void initializeStuff();
 void closeStuff();
 void childProc(int childNum);
-void threadFindPrimes(const unsigned int from, const unsigned int to);
-void addPrimeToBitMap(unsigned int prime);
+void threadFindPrimes(unsigned int from, const unsigned int to);
+void setBitInBitMap(unsigned int prime);
 bool isBitOn(unsigned int whichNum);
 void turnBitOff(unsigned int bit);
 void turnBitOn(unsigned int);
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
 	//threadFindPrimes(51, 100);
 
 	cout << "Found " << countPrimes() << endl;
-	printAllPrimes();
+	//printAllPrimes();
 
 	closeStuff();
 	return 0;
@@ -132,7 +132,7 @@ void closeStuff() {
 }
 
 void childProc(int childNum) {
-	unsigned int numEach = (MAXNUMBER / workers) + 1;
+	unsigned int numEach = (sqrt(MAXNUMBER) / workers) + 1;
 	unsigned int startNum = childNum * numEach;
 	unsigned int endNum = startNum + numEach;
 	if (endNum > MAXNUMBER)
@@ -145,80 +145,50 @@ void childProc(int childNum) {
 
 //This Code Originally From:
 //http://create.stephan-brumme.com/eratosthenes
-//Ever so slightly optomized and changed
-void threadFindPrimes(const unsigned int from, const unsigned int to) {
-	const unsigned int memorySize = (to - from + 1) / 2;
-
-	//Setup
-	char* isPrime = new char[memorySize];
-	for (unsigned int i = 0; i < memorySize; i++)
-		isPrime[i] = 1;
-	//isPrime[0] = 0;
-
-	for (unsigned int i = 3; i*i <= to; i+=2) {
+//Totally Changed.
+void threadFindPrimes(unsigned int from, const unsigned int to) {
+	if (from < 3)
+		from = 3;
+	if (from % 2 == 0)
+		from++;
+	for (unsigned int i = from; i <= to; i+=2) {
 		//skip multiples of three: 9, 15, 21, 27, ...
-		//More than 13 doesn't give any improvement (test outweighs its gain)
-		if (i >= 3*3 && i % 3 == 0)
+		if (i > 5 && i % 3 == 0)
 			continue;
 		// skip multiples of five
-		if (i >= 5*5 && i % 5 == 0)
+		if (i > 7 && i % 5 == 0)
 			continue;
 		// skip multiples of seven
-		if (i >= 7*7 && i % 7 == 0)
+		if (i > 9 && i % 7 == 0)
 			continue;
 		// skip multiples of eleven
-		if (i >= 11*11 && i % 11 == 0)
+		if (i > 13 && i % 11 == 0)
 			continue;
 		// skip multiples of thirteen
-		if (i >= 13*13 && i % 13 == 0)
+		if (i > 15 && i % 13 == 0)
 			continue;
 		// skip multiples of seventeen
-		if (i >= 17*17 && i % 17 == 0)
+		if (i > 19 && i % 17 == 0)
 			continue;
 
-		// skip numbers before current slice
-		unsigned int minJ = ((from+i-1)/i)*i;
-		if (minJ < i*i)
-			minJ = i*i;
-
-		// start value must be odd
-		if ((minJ & 1) == 0)
-			minJ += i;
-
 		// find all odd non-primes
-		for (unsigned int j = minJ; j <= to; j += 2*i) {
-			unsigned int index = j - from;
-		 	isPrime[index/2] = 0;
+		for (unsigned int j = i*i; j <= MAXNUMBER; j += i) {
+			//cout << "adding non-prime: " << j << " from/to: " << from << " " << to << endl;
+		 	setBitInBitMap(j);
 		}
 	}
-	// count primes in this block
-
-	int found = 0;
-	for (unsigned int i = 0; i < memorySize; i++) {
-		if (isPrime[i] == 1) {
-			addPrimeToBitMap( (i * 2) + 1 + from);
-			found++;
-		}
-	}
-	// 2 is not odd => include on demand
-	if (from <= 2) {
-		found++;
-		addPrimeToBitMap(2);
-	}
-
-	delete[] isPrime;
-	cout << "found: " << found << " primes." << endl;
 }
 
 //Adds the number passed to it to the bitmap.
-void addPrimeToBitMap(unsigned int prime) {
+void setBitInBitMap(unsigned int prime) {
 	int primeByteLoc = (prime - 1) / 8;
 	int primeBitLoc = prime - (primeByteLoc * 8);
 	bitmap[primeByteLoc] |= 128 >> primeBitLoc;
-	cout << "adding prime: " << prime << " to byte: " << primeByteLoc << "(" << &primeByteLoc << ") and bit: " << primeBitLoc << endl;
 }
 
 bool isBitOn(unsigned int whichNum) {
+	if (whichNum % 2 == 0)
+		return true;
 	if (whichNum < 1)
 		return false;
 
@@ -271,7 +241,7 @@ return false;
 unsigned int countPrimes() {
 	int found = 0;
 	for (unsigned int i = 0; i <= MAXNUMBER; i++) {
-		if (isBitOn(i))
+		if (!isBitOn(i))
 			found ++;
 	}
 	return found;
@@ -279,7 +249,7 @@ unsigned int countPrimes() {
 
 void printAllPrimes() {
 	for (unsigned int i = 1; i < MAXNUMBER; i++) {
-		if (isBitOn(i))
+		if (!isBitOn(i))
 			cout << i << endl;
 	}
 }

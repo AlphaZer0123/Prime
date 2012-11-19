@@ -1,7 +1,7 @@
 //This Code Originally From:
 //http://create.stephan-brumme.com/eratosthenes
 //Ever so slightly optomized and changed
-void threadFindPrimes(const unsigned int from, const unsigned int to) {
+void threadFindPrimes(unsigned int from, const unsigned int to) {
 	if (from < 3)
 		from = 3;
 	if (from % 2 == 0)
@@ -27,9 +27,9 @@ void threadFindPrimes(const unsigned int from, const unsigned int to) {
 			continue;
 
 		// find all odd non-primes
-		for (unsigned int j = i*i; j <= to; j += i) {
+		for (unsigned int j = i*i; j <= MAXNUMBER; j += i) {
+			//cout << "adding non-prime: " << j << " from/to: " << from << " " << to << endl;
 		 	setBitInBitMap(j);
 		}
 	}
-	delete[] isPrime;
 }
