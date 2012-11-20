@@ -39,33 +39,39 @@ void turnBitOn(unsigned int);
 unsigned int countPrimes();
 void printAllPrimes();
 
+//Takes the command line arguments, interprets them,
+//Initializes all shared objects, and closes them once the
+//Main program is finished executing.
 int main(int argc, char **argv) {
-	//just ran program.  assume 10 working children
+	proc = false;
+	//User Ran program without specifying number
+	//Or tpe of children.
+	//Assume 8 worker Threads
 	if (argc < 2) {
 		cout << "Quantity or Type Not Specified, So Assuming 8 Working Threads" << endl;
 		workers = 8;
-		proc = false;
 	}
-	//Provided just number, but not type.  Assume threads
+	//User Provided Number of workers,
+	//but not type.  Assume threads.
 	else if (argc == 2) {
 		cout << "You provided number, but not type, So assuming " << atoi (argv[1]) << " Working Threads" << endl;
 		workers = atoi (argv[1]);
-		proc = false;
 	}
-	//Provided both number and type.
+	//User provided both Number of workers,
+	//And type, so set the variables for that
 	else if (argc == 3) {
 		workers = atoi (argv[1]);
 		if (argv[2] == "Processes" || argv[2] == "Process" || argv[2] == "processes" || argv[2] == "process")
 			proc = true;
-		else
-			proc = false;
 	}
-	//Too many arguments
+	//User provided too many arguments.
+	//Tell them such.
 	else {
 		cout << HELP << endl << "I can't handle all this awesomness!\n" << "Too many arguments!" << endl;
 		kill("Invalid use of Prime.");
 	}
 
+	//There is where we switch to Processes if we are doing that, rather than Threads.
 	if (proc == true)
 		kill("processes not implemented yet!");
 
@@ -73,18 +79,20 @@ int main(int argc, char **argv) {
 	initializeStuff();
 
 	//Fire up the Threads!
+	//Boost makes it really easy to create a ton of threads.
 	for (int i = 0; i < workers; i++) {
 		threadList.create_thread(boost::bind(childProc, i));
 	}
 
 	//Wait for all Threads to finish.
+	//Boost makes it really easy to wait on a ton of threads.
 	threadList.join_all();
 
-	//threadFindPrimes(51, 100);
-
+	//Count The primes from the bitmap!
 	cout << "Found " << countPrimes() << endl;
 	//printAllPrimes();
 
+	//Make sure we close all the shared stuff.
 	closeStuff();
 	return 0;
 }
@@ -125,12 +133,14 @@ void initializeStuff() {
 	bitmap = (unsigned char*)(addr + sizeof(unsigned int));
 }
 
+//Closes all the shared objects we set up in initializeStuff()
 void closeStuff() {
 	//Make sure we remove our shm object.
 	close(shmem_fd);
 	shm_unlink("/villwocj_shmem");
 }
 
+//This is what each child will run.
 void childProc(int childNum) {
 	unsigned int numEach = (sqrt(MAXNUMBER) / workers) + 1;
 	unsigned int startNum = childNum * numEach;
@@ -143,6 +153,7 @@ void childProc(int childNum) {
 	threadFindPrimes(startNum, endNum);
 }
 
+//This is the code each child will run to actually find their chunk of primes.
 //This Code Originally From:
 //http://create.stephan-brumme.com/eratosthenes
 //Totally Changed.
