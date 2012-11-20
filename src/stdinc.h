@@ -4,8 +4,10 @@
 #define _BSD_SOURCE
 
 #define HELP "\nCorrect Program Usage:\nPrime [<number of workers >] [<type of workers>]\nNumber of workers will be assumed to be 10 if not specified\nType will be assumed to be Threads if not specified\n\nExamples of correct usage:\nPrime 10 threads\nPrime 5 processes\n"
-#define MAXNUMBER 100000000
-//4294967295  full 32 bit
+
+//Change this to change the range to Generate
+//4294967295 is the full 32 bit integer size
+#define MAXNUMBER 4294967295
 
 #include <sys/mman.h>
 #include <sys/stat.h>

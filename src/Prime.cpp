@@ -32,7 +32,7 @@ void initializeStuff();
 void closeStuff();
 void childProc(int childNum);
 void threadFindPrimes(unsigned int from, const unsigned int to);
-void setBitInBitMap(unsigned int prime);
+void turnOnBit(unsigned int number);
 bool isBitOn(unsigned int whichNum);
 void turnBitOff(unsigned int bit);
 void turnBitOn(unsigned int);
@@ -142,7 +142,7 @@ void closeStuff() {
 
 //This is what each child will run.
 void childProc(int childNum) {
-	unsigned int numEach = (sqrt(MAXNUMBER) / workers) + 1;
+	unsigned int numEach = (MAXNUMBER / workers) + 1;
 	unsigned int startNum = childNum * numEach;
 	unsigned int endNum = startNum + numEach;
 	if (endNum > MAXNUMBER)
@@ -158,61 +158,77 @@ void childProc(int childNum) {
 //http://create.stephan-brumme.com/eratosthenes
 //Totally Changed.
 void threadFindPrimes(unsigned int from, const unsigned int to) {
-	if (from < 3)
-		from = 3;
-	if (from % 2 == 0)
-		from++;
-	for (unsigned int i = from; i <= to; i+=2) {
-		//skip multiples of three: 9, 15, 21, 27, ...
-		if (i > 5 && i % 3 == 0)
+	for (unsigned int i = 3; i <= sqrt(to); i+=2) {
+		//Makes code significantly faster:
+		//skip multiples of 3, 5, 7, 11, 15, 17, ...
+		/*
+ 		if (i % 3 && i > 5 == 0)
 			continue;
 		// skip multiples of five
-		if (i > 7 && i % 5 == 0)
+		if (i % 5 && i > 7 == 0)
 			continue;
 		// skip multiples of seven
-		if (i > 9 && i % 7 == 0)
+		if (i % 7 && i > 9 == 0)
 			continue;
 		// skip multiples of eleven
-		if (i > 13 && i % 11 == 0)
+		if (i % 11 && i > 13 == 0)
 			continue;
 		// skip multiples of thirteen
-		if (i > 15 && i % 13 == 0)
+		if (i % 13 && i > 15 == 0)
 			continue;
 		// skip multiples of seventeen
-		if (i > 19 && i % 17 == 0)
+		if (i % 17 && i > 19 == 0)
 			continue;
+		*/
+
+		//Minimum number to start working at:
+		unsigned int minJ = i*i;
+		if (minJ < from) {
+			minJ = from;
+			while (minJ % i != 0) {
+				minJ++;
+			}
+		}
 
 		// find all odd non-primes
-		for (unsigned int j = i*i; j <= MAXNUMBER; j += i) {
+		for (unsigned int j = minJ; j <= to; j += i) {
 			//cout << "adding non-prime: " << j << " from/to: " << from << " " << to << endl;
-		 	setBitInBitMap(j);
+		 	turnOnBit(j);
 		}
 	}
 }
 
 //Adds the number passed to it to the bitmap.
-void setBitInBitMap(unsigned int prime) {
-	int primeByteLoc = (prime - 1) / 8;
-	int primeBitLoc = prime - (primeByteLoc * 8);
+void turnOnBit(unsigned int number) {
+	int primeByteLoc = (number - 1) / 8;
+	int primeBitLoc = number - (primeByteLoc * 8);
 	bitmap[primeByteLoc] |= 128 >> primeBitLoc;
 }
 
+//Not strictly checking if bit is on.
+//Added code to make it considerably faster,
+//Since we're only checking primes.
 bool isBitOn(unsigned int whichNum) {
+	//Even numbers are never Primes, so don't bother checking
+	if (whichNum == 1)
+		return true;
+	if (whichNum == 2)
+		return false;
 	if (whichNum % 2 == 0)
 		return true;
+	//Prevents problems with negative numbers and such
 	if (whichNum < 1)
 		return false;
 
-	unsigned int whichByte = 0;
-	unsigned int whichBit = 0;
-	whichByte = (whichNum - 1) / 8;
+	//Which byte is this number located in?
+	unsigned int whichByte = (whichNum - 1) / 8;
 
 	//Byte was empty.  break.
 	if(bitmap[whichByte] == 0)
 		return false;
 
 	//Which Bit are we looking for inside this byte?
-	whichBit = whichNum - (whichByte * 8);
+	unsigned int whichBit = whichNum - (whichByte * 8);
 
 	if(whichBit == 0) {
 		if(bitmap[whichByte] & 128)
