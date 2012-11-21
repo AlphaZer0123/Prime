@@ -12,3 +12,9 @@ Usage
 change directory to src folder, and
 
 make
+
+change directory to src folder, and
+
+make -f doc
+
+To amke documentation
