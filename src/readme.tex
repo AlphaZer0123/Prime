@@ -1,0 +1,121 @@
+\documentclass[letterpaper,10pt,titlepage]{article}
+
+\usepackage{graphicx}                                        
+
+\usepackage{amssymb}                                         
+\usepackage{amsmath}                                         
+\usepackage{amsthm}                                          
+
+\usepackage{alltt}                                           
+\usepackage{float}
+\usepackage{color}
+
+\usepackage{url}
+
+\usepackage{balance}
+\usepackage[TABBOTCAP, tight]{subfigure}
+\usepackage{enumitem}
+
+\usepackage{pstricks, pst-node}
+
+\usepackage{geometry}
+\geometry{textheight=9in, textwidth=6.5in}
+
+%random comment
+
+\newcommand{\cred}[1]{{\color{red}#1}}
+\newcommand{\cblue}[1]{{\color{blue}#1}}
+
+\usepackage{hyperref}
+
+\def\name{Joshua Villwock}
+
+%pull in the necessary preamble matter for pygments output
+\input{pygments.tex}
+
+%% The following metadata will show up in the PDF properties
+\hypersetup{
+  colorlinks = true,
+  urlcolor = black,
+  pdfauthor = {\name},
+  pdfkeywords = {cs311 ``operating systems'' files filesystem I/O},
+  pdftitle = {CS 311 Project 5: UNIX File I/O},
+  pdfsubject = {CS 311 Project 5},
+  pdfpagemode = UseNone
+}
+
+\parindent = 0.0 in
+\parskip = 0.2 in
+
+\begin{document}
+\tableofcontents
+
+\section{Overall System Design}
+
+Whenever you run the program, it first parses your command line arguments to decide what it is supposed to do.  It then calls initialiseStuff() to set up the shared memory and mutex(s).
+
+The Overall Design of the system is designed to split the range of numbers up in even sections to be sent to each of the worker Threads or Processes.  Some research and work was done to split the work up in sections approximately relational to how much cpu time each would take, but problems encountered later in programming forced them to be removed for now.
+
+It then uses the boost library to easily create all the child processes.  Each child process then calls the function to calculate it's range of primes.
+
+In this project, the bitmap is used very similar to how the list is used in the Sieve of Eratosthenes.  Each bit starts out being a 0. (to make it faster)  Once we know it is not a prime, we change it to a 1.
+
+I had actually coded a much faster function for finding the primes that had done it the other way around, and that didn't do so much extra unneeded work.  However, I couldn't get it to work threaded properly.  (specifically with an odd number of workers.) So, I had to quickly develop a different method of finding the primes, which I am using now, and is MUCH slower.
+
+In the new Algorithm, each thread starts at 3, and marks off all multiples of it, starting at the beginning of their range, up to the top of their range.  They then take all multiples of 5 and mark them off within their range.  It skips all even numbers, as they are obviously not prime (except 2) This makes it nearly twice as fast.
+
+This works fairly well, but is still too much of a brute force method of doing it, so is fairly slower.  It is still Nearly 1000X as fast as truly brute-forcing it, however.
+
+finally, the main thread calls join on each thread, using boost's joinall for simplification.  after all the threads have been joined, it will begin iterating through the bitmap, and count all the values that are not marked.  It then outputs that to the console, and optionally, outputs all the primes themselves.
+
+\section{Work Log}
+
+Nov. 9th:  Old prime-finding code commited.  
+
+10th: compiles
+
+12th: begins to work.  optomization.
+
+14th: Working without threads!
+
+15th: begin threads work.
+
+16th: command line parsing, help.
+
+17th: threadgroup and printPrimes
+
+19th: new, lame prime code.
+
+20th: code working (slowly sorta :( )
+
+Full work log can be found here:
+\url{https://github.com/1n5aN1aC/Prime/commits/master}
+
+\section{Challenges}
+
+I thought it was going to be easy, but had major problems parallelizing  my prime-finding code, but had to resort to coding my own, horribly inefficient method of doing it, in the end.
+
+I was also very busy the entire time, so even finding time to work on the project was a bit of a stretch.
+
+I'm still having small issues with getting comfortable  with using C / C++, so I still had to try things several times to get them to work occasionally.
+
+\section{Questions And Answers}
+
+\subsection{what do you think the main point of this assignment is?}
+
+\begin{itemize}
+\item To get used to parallelizing different types of algorithms
+\item To learn how to use shared memory, as well as using weird or unconventional data storage types.
+\end{itemize}
+
+\subsection{how did you ensure your solution was correct? Testing details, for instance.}
+
+It was tested with all numbers of threads, from 1 to 25, and every 5 threads from there, up to 100.
+
+I also tested different amounts for the max number it checks up to.  this can be changed in the stdinc.h file
+
+\subsection{what did you learn?}
+
+I learned that copying code from websites to do an algarythm is smart, but first think carefully about *how* they are doing it, and if it will work for your purposes.
+
+\end{document}

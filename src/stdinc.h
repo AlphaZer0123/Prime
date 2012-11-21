@@ -7,7 +7,7 @@
 
 //Change this to change the range to Generate
 //4294967295 is the full 32 bit integer size
-#define MAXNUMBER 4294967295
+#define MAXNUMBER 1000000000
 
 #include <sys/mman.h>
 #include <sys/stat.h>

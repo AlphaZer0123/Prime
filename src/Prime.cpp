@@ -147,6 +147,8 @@ void childProc(int childNum) {
 	unsigned int endNum = startNum + numEach;
 	if (endNum > MAXNUMBER)
 		endNum = MAXNUMBER;
+	if (childNum == workers - 1)
+		endNum = MAXNUMBER;
 
 	//Debug code for if values seem to be wrong:
 	cout << "Thread " << childNum << " will find from " << startNum << " to " << endNum << endl;
@@ -162,22 +164,22 @@ void threadFindPrimes(unsigned int from, const unsigned int to) {
 		//Makes code significantly faster:
 		//skip multiples of 3, 5, 7, 11, 15, 17, ...
 		/*
- 		if (i % 3 && i > 5 == 0)
+ 		if (i >= 3*3 && i % 3== 0)
 			continue;
 		// skip multiples of five
-		if (i % 5 && i > 7 == 0)
+		if (i >= 5*5 && i % 5 == 0)
 			continue;
 		// skip multiples of seven
-		if (i % 7 && i > 9 == 0)
+		if (i >= 7*7 && i % 7 == 0)
 			continue;
 		// skip multiples of eleven
-		if (i % 11 && i > 13 == 0)
+		if (i >= 11*11 && i % 11 == 0)
 			continue;
 		// skip multiples of thirteen
-		if (i % 13 && i > 15 == 0)
+		if (i >= 13*13 && i % 13 == 0)
 			continue;
 		// skip multiples of seventeen
-		if (i % 17 && i > 19 == 0)
+		if (i >= 17*17 && i % 17 == 0)
 			continue;
 		*/
 
