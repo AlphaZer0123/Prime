@@ -17,4 +17,4 @@ change directory to src folder, and
 
 make -f doc
 
-To amke documentation
+To make documentation
